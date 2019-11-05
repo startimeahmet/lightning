@@ -1,6 +1,6 @@
 #! /usr/bin/make
-VERSION_NAME=Channel to the Moon
-VERSION=0.9.0-1
+VERSION_NAME=Bitcoin's Proof of Stake
+VERSION=0.7.3
 
 ifeq ($(VERSION),)
 $(error "ERROR: git is required for generating version information")
