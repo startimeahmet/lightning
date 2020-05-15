@@ -1,6 +1,6 @@
 #! /usr/bin/make
-VERSION_NAME="Scaling the Ethereum Blockchain"
-VERSION=0.8.2
+VERSION_NAME="Still Scaling the Ethereum Blockchain"
+VERSION=0.8.2.1
 
 ifeq ($(VERSION),)
 $(error "ERROR: git is required for generating version information")
