@@ -1,6 +1,6 @@
 #! /usr/bin/make
-VERSION_NAME="The Antiguan BTC Maximalist Society"
-VERSION=0.9.1
+VERSION_NAME="Now with 0-of-N Multisig"
+VERSION=0.9.2
 
 ifeq ($(VERSION),)
 $(error "ERROR: git is required for generating version information")
