@@ -1,6 +1,6 @@
 #! /usr/bin/make
-VERSION_NAME="Now with 0-of-N Multisig"
-VERSION=0.9.2
+VERSION_NAME="Federal Qualitative Strengthening"
+VERSION=0.9.3
 
 ifeq ($(VERSION),)
 $(error "ERROR: git is required for generating version information")
