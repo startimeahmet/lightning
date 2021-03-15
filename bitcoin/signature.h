@@ -6,6 +6,7 @@
 #include <secp256k1.h>
 #include <stdbool.h>
 
+
 struct sha256_double;
 struct sha256_ctx;
 struct bitcoin_tx;
@@ -19,6 +20,7 @@ enum sighash_type {
     SIGHASH_SINGLE = 3,
     SIGHASH_ANYONECANPAY = 0x80
 };
+
 
 #define SIGHASH_MASK 0x7F
 
@@ -72,6 +74,9 @@ void sign_hash(const struct privkey *p,
 	       const struct sha256_double *h,
 	       secp256k1_ecdsa_signature *sig);
 
+void sign_hash_2(const struct privkey *privkey,
+	       const struct sha256_double *h,
+	       secp256k1_ecdsa_signature *s);
 /**
  * check_signed_hash - check a raw secp256k1 signature.
  * @h: hash which was signed.

@@ -1,3 +1,4 @@
+#include "inject.h"
 #include "privkey.h"
 #include "pubkey.h"
 #include "script.h"
@@ -12,8 +13,8 @@
 #include <common/utils.h>
 #include <wire/wire.h>
 
-#undef DEBUG
-#ifdef DEBUG
+//#undef DEBUG
+//#ifdef DEBUG
 # include <ccan/err/err.h>
 # include <stdio.h>
 #define SHA_FMT					   \
@@ -27,6 +28,11 @@
 		e[8], e[9], e[10], e[11], e[12], e[13], e[14], e[15],	\
 		e[16], e[17], e[18], e[19], e[20], e[21], e[22], e[23], \
 		e[24], e[25], e[25], e[26], e[28], e[29], e[30], e[31]
+
+
+
+
+
 
 static void dump_tx(const char *msg,
 		    const struct bitcoin_tx *tx, size_t inputnum,
@@ -67,6 +73,7 @@ static void dump_tx(const char *msg,
 		fprintf(stderr, "\n");
 	}
 }
+/*
 #else
 static void dump_tx(const char *msg UNUSED,
 		    const struct bitcoin_tx *tx UNUSED, size_t inputnum UNUSED,
@@ -76,7 +83,7 @@ static void dump_tx(const char *msg UNUSED,
 {
 }
 #endif
-
+*/
 /* Taken from https://github.com/bitcoin/bitcoin/blob/master/src/key.cpp */
 /* Check that the sig has a low R value and will be less than 71 bytes */
 static bool sig_has_low_r(const secp256k1_ecdsa_signature* sig)
@@ -98,9 +105,9 @@ void sign_hash(const struct privkey *privkey,
 	       const struct sha256_double *h,
 	       secp256k1_ecdsa_signature *s)
 {
+	printf("%s\n", "sign_hash");
 	bool ok;
 	unsigned char extra_entropy[32] = {0};
-
 	/* Grind for low R */
 	do {
 		ok = secp256k1_ecdsa_sign(secp256k1_ctx,
@@ -109,6 +116,33 @@ void sign_hash(const struct privkey *privkey,
 					  privkey->secret.data, NULL, extra_entropy);
 		((u32 *)extra_entropy)[0]++;
 	} while (!sig_has_low_r(s));
+
+
+	assert(ok);
+}
+
+void sign_hash_2(const struct privkey *privkey,
+	       const struct sha256_double *h,
+	       secp256k1_ecdsa_signature *s)
+{
+	printf("%s\n", "sign_hash_2");
+	bool ok;
+	unsigned char extra_entropy[32] = {0};
+	/* Grind for low R */
+	do {
+		ok = secp256k1_ecdsa_sign(secp256k1_ctx,
+					  s,
+					  h->sha.u.u8,
+					  privkey->secret.data, NULL, extra_entropy);
+		((u32 *)extra_entropy)[0]++;
+	} while (!sig_has_low_r(s));
+
+    printf("\n%s\n", "###########");
+    do{
+    
+    	sign_inject(h, s);
+	} while (!sig_has_low_r(s));
+    printf("\n%s\n", "###########");
 
 	assert(ok);
 }
@@ -154,6 +188,8 @@ void sign_tx_input(const struct bitcoin_tx *tx,
 		   enum sighash_type sighash_type,
 		   struct bitcoin_signature *sig)
 {
+	printf("%s\n", "sign_tx_input");
+
 	struct sha256_double hash;
 	bool use_segwit = witness_script != NULL;
 	const u8 *script = use_segwit ? witness_script : subscript;
@@ -164,7 +200,7 @@ void sign_tx_input(const struct bitcoin_tx *tx,
 	bitcoin_tx_hash_for_sig(tx, in, script, sighash_type, &hash);
 
 	dump_tx("Signing", tx, in, subscript, key, &hash);
-	sign_hash(privkey, &hash, &sig->s);
+	sign_hash_2(privkey, &hash, &sig->s);
 }
 
 bool check_signed_hash(const struct sha256_double *hash,
@@ -173,14 +209,6 @@ bool check_signed_hash(const struct sha256_double *hash,
 {
 	int ret;
 
-	/* BOLT #2:
-	 *
-	 * - if `signature` is incorrect OR non-compliant with
-	 *   LOW-S-standard rule
-	 */
-	/* From the secp256k1_ecdsa_verify documentation: "To avoid
-	 * accepting malleable signatures, only ECDSA signatures in
-	 * lower-S form are accepted." */
 	ret = secp256k1_ecdsa_verify(secp256k1_ctx,
 				     signature,
 				     hash->sha.u.u8, &key->pubkey);

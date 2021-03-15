@@ -916,18 +916,12 @@ class LightningRpc(UnixDomainSocketRpc):
         }
         return self.call("listconfigs", payload)
 
-    def listforwards(self, status=None, in_channel=None, out_channel=None):
-        """List all forwarded payments and their information matching
-        forward {status}, {in_channel} and {out_channel}.
+    def listforwards(self):
+        """List all forwarded payments and their information.
         """
-        payload = {
-            "status": status,
-            "in_channel": in_channel,
-            "out_channel": out_channel,
-        }
-        return self.call("listforwards", payload)
+        return self.call("listforwards")
 
-    def listfunds(self, spent=None):
+    def listfunds(self, spent=False):
         """
         Show funds available for opening channels
         or both unspent and spent funds if {spent} is True.
@@ -1091,22 +1085,6 @@ class LightningRpc(UnixDomainSocketRpc):
             "psbt": psbt,
         }
         return self.call("openchannel_update", payload)
-
-    def openchannel_bump(self, channel_id, amount, initialpsbt):
-        """ Initiate an RBF for an in-progress open """
-        payload = {
-            "channel_id": channel_id,
-            "amount": amount,
-            "initialpsbt": initialpsbt,
-        }
-        return self.call("openchannel_bump", payload)
-
-    def openchannel_abort(self, channel_id):
-        """ Abort a channel open """
-        payload = {
-            "channel_id": channel_id,
-        }
-        return self.call("openchannel_abort", payload)
 
     def paystatus(self, bolt11=None):
         """Detail status of attempts to pay {bolt11} or any."""

@@ -443,17 +443,12 @@ u8 *linearize_wtx(const tal_t *ctx, const struct wally_tx *wtx)
 	return arr;
 }
 
-size_t wally_tx_weight(const struct wally_tx *wtx)
-{
-	size_t weight;
-	int ret = wally_tx_get_weight(wtx, &weight);
-	assert(ret == WALLY_OK);
-	return weight;
-}
-
 size_t bitcoin_tx_weight(const struct bitcoin_tx *tx)
 {
-	return wally_tx_weight(tx->wtx);
+	size_t weight;
+	int ret = wally_tx_get_weight(tx->wtx, &weight);
+	assert(ret == WALLY_OK);
+	return weight;
 }
 
 void wally_txid(const struct wally_tx *wtx, struct bitcoin_txid *txid)

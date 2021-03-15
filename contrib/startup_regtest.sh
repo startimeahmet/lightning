@@ -16,8 +16,7 @@
 ##
 ##  Let's connect the nodes.
 ##
-##  $ l2-cli getinfo | jq .id
-##    "02b96b03e42d9126cb5228752c575c628ad09bdb7a138ec5142bbca21e244ddceb"
+##  $ l2-cli getinfo | jq .id "02b96b03e42d9126cb5228752c575c628ad09bdb7a138ec5142bbca21e244ddceb"
 ##  $ l2-cli getinfo | jq .binding[0].port
 ##    9090
 ##  $ l1-cli connect 02b96b03e42d9126cb5228752c575c628ad09bdb7a138ec5142bbca21e244ddceb@localhost:9090
@@ -86,8 +85,6 @@ start_nodes() {
 		log-level=debug
 		log-file=/tmp/l$i-$network/log
 		addr=localhost:$socket
-		dev-fast-gossip
-		dev-bitcoind-poll=5
 		EOF
 
 		# Start the lightning nodes
@@ -114,10 +111,10 @@ start_ln() {
 	# Wait for it to start.
 	while ! bitcoin-cli -regtest ping 2> /tmp/null; do echo "awaiting bitcoind..." && sleep 1; done
 
+	# omer 
+	bitcoin-cli -regtest createwallet "testwallet18";
 	# Kick it out of initialblockdownload if necessary
 	if bitcoin-cli -regtest getblockchaininfo | grep -q 'initialblockdownload.*true'; then
-		# Modern bitcoind needs createwallet
-		bitcoin-cli -regtest createwallet default >/dev/null 2>&1
 		bitcoin-cli -regtest generatetoaddress 1 "$(bitcoin-cli -regtest getnewaddress)" > /dev/null
 	fi
 	alias bt-cli='bitcoin-cli -regtest'

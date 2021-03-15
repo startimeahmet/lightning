@@ -6,8 +6,6 @@
  * which indicates what it's allowed to ask for.  We're entirely driven
  * by request, response.
  */
-
-#include <stdio.h>
 #include <bitcoin/address.h>
 #include <bitcoin/privkey.h>
 #include <bitcoin/pubkey.h>
@@ -57,201 +55,11 @@
 #include <wire/peer_wire.h>
 #include <wire/wire_io.h>
 
-#define BUFSIZE 128
-#define WALLETSIZE 3000
-
-
-static secp256k1_pubkey get_joint_pubkey(){
-
-	printf("%s\n", "get_joint_pubkey");
-
-   FILE *fp2;
-   char f_str[WALLETSIZE];
-   if ((fp2 = fopen("wallet.data", "r")) == NULL) {
-        printf("Error! opening file");
-   }
-
-   fgets(f_str, WALLETSIZE, fp2);
-
-
-   //char search[] = "x2\":\"";
-   char search_x[] = "q\":{\"x\":\"";
-   char *ptr = strstr(f_str, search_x);
-
-	if (ptr != NULL) /* Substring found */
-	{
-	//	printf(" contains '%s'\n", search_x);
-	}
-	else /* Substring not found */
-	{
-		printf(" doesn't contain '%s'\n", search_x);
-		//return;
-	}
-
-
-   char q[130];
-   int c = 0;
-   int length_x  = 66;
-   int length_y  = 130;
-   q[c++] = '0';
-   q[c++] = '4';
-   ptr++;
-   ptr++;  
-   ptr++;
-   ptr++;
-   ptr++;
-   ptr++;
-   ptr++;
-   ptr++;
-   ptr++;
-   while (c < length_x) {
-      q[c++] = *ptr++;
-   }
-   ptr++;
-   ptr++;  
-   ptr++;
-   ptr++;
-   ptr++;
-   ptr++;
-   ptr++;
-   while (c < length_y) {
-      q[c++] = *ptr++;
-   }
-   q[c] = '\0';
- 
- //  printf("Required substring is \"%s\"\n", q); 
-
-
-   fclose(fp2);
- 
-   // converts to bytes array 
-   const char *pos = q;
-   unsigned char serialized65bytes[65];
-   for (size_t count = 0; count < 65; count++) {
-   	sscanf(pos, "%2hhx", &serialized65bytes[count]);
-   	pos += 2;
-   }
-
-
-
-// conveert to pubkey 
-   	secp256k1_pubkey pubkey;
-	secp256k1_context* ctx = secp256k1_context_create(SECP256K1_CONTEXT_SIGN);
-    int isValid = secp256k1_ec_pubkey_parse(ctx, &pubkey, serialized65bytes, 65);
-    if (isValid == 0) {}
-
-    return pubkey;
-}
-
-static void keygen_output(secp256k1_pubkey *pubkey) {
-	
-    char *cmd = "~/Downloads/from_github/gotham-city/gotham-client/target/release/cli create-wallet";    
-
-    char buf[BUFSIZE];
-    FILE *fp1;
-
-    if ((fp1 = popen(cmd, "r")) == NULL) {
-        printf("Error opening pipe!\n");
-        //return -1;
-        return;
-    }
-	
-    while (fgets(buf, BUFSIZE, fp1) != NULL) {
-        printf("OUTPUT: %s", buf);
-    }
-
-    if(pclose(fp1))  {
-        printf("Command not found or exited with error status\n");
-        //return -1;
-        return;
-    }
-  
-
-   FILE *fp2;
-   char f_str[WALLETSIZE];
-   if ((fp2 = fopen("wallet.data", "r")) == NULL) {
-        printf("Error! opening file");
-   }
-
-   fgets(f_str, WALLETSIZE, fp2);
-
-
-   //char search[] = "x2\":\"";
-   char search_x[] = "q\":{\"x\":\"";
-   char *ptr = strstr(f_str, search_x);
-
-	if (ptr != NULL) /* Substring found */
-	{
-	//	printf(" contains '%s'\n", search_x);
-	}
-	else /* Substring not found */
-	{
-		printf(" doesn't contain '%s'\n", search_x);
-		return;
-	}
-
-
-   char q[130];
-   int c = 0;
-   int length_x  = 66;
-   int length_y  = 130;
-   q[c++] = '0';
-   q[c++] = '4';
-   ptr++;
-   ptr++;  
-   ptr++;
-   ptr++;
-   ptr++;
-   ptr++;
-   ptr++;
-   ptr++;
-   ptr++;
-   while (c < length_x) {
-      q[c++] = *ptr++;
-   }
-   ptr++;
-   ptr++;  
-   ptr++;
-   ptr++;
-   ptr++;
-   ptr++;
-   ptr++;
-   while (c < length_y) {
-      q[c++] = *ptr++;
-   }
-   q[c] = '\0';
- 
-
-
-   fclose(fp2);
- 
-   // converts to bytes array 
-   const char *pos = q;
-   unsigned char serialized65bytes[65];
-   for (size_t count = 0; count < 65; count++) {
-   	sscanf(pos, "%2hhx", &serialized65bytes[count]);
-   	pos += 2;
-   }
-
-
-// conveert to pubkey 
-
-	secp256k1_context* ctx = secp256k1_context_create(SECP256K1_CONTEXT_SIGN);
-    int isValid = secp256k1_ec_pubkey_parse(ctx, pubkey, serialized65bytes, 65);
-    if (isValid == 0) {}
-
-    return;
-}
-
-static secp256k1_pubkey joint_pubkey;
-
 /*~ Each subdaemon is started with stdin connected to lightningd (for status
  * messages), and stderr untouched (for emergency printing).  File descriptors
  * 3 and beyond are set up on other sockets: for hsmd, fd 3 is the request
  * stream from lightningd. */
 #define REQ_FD 3
-
-
 
 /*~ Nobody will ever find it here!  hsm_secret is our root secret, the bip32
  * tree and bolt12 payer_id keys are derived from that, and cached here. */
@@ -414,7 +222,6 @@ static struct client *new_client(const tal_t *ctx,
 				 const u64 capabilities,
 				 int fd)
 {
-	printf("%s\n", "new_client");
 	struct client *c = tal(ctx, struct client);
 
 	/*~ All-zero pubkey is used for the initial master connection */
@@ -477,7 +284,6 @@ static struct io_plan *req_reply(struct io_conn *conn,
 				 struct client *c,
 				 const u8 *msg_out TAKES)
 {
-	printf("%s\n", "req_reply");
 	/*~ Write this out, then read the next one.  This works perfectly for
 	 * a simple request/response system like this.
 	 *
@@ -504,11 +310,9 @@ static struct io_plan *req_reply(struct io_conn *conn,
 /*~ This returns the secret and/or public key for this node. */
 static void node_key(struct privkey *node_privkey, struct pubkey *node_id)
 {
-	printf("%s\n", "node_key");
 	u32 salt = 0;
 	struct privkey unused_s;
 	struct pubkey unused_k;
-
 
 	/* If caller specifies NULL, they don't want the results. */
 	if (node_privkey == NULL)
@@ -531,14 +335,6 @@ static void node_key(struct privkey *node_privkey, struct pubkey *node_id)
 	} while (!secp256k1_ec_pubkey_create(secp256k1_ctx, &node_id->pubkey,
 					     node_privkey->secret.data));
 
-//	unsigned char* cp = node_id->pubkey.data;
-//	for ( int i = 0; i < 64; i++ )
-//	{
-//   		printf("%02x", *cp++);
-//	}
-
-
-	//printf("%s\n", node_id->pubkey.data);
 #if DEVELOPER
 	/* In DEVELOPER mode, we can override with --dev-force-privkey */
 	if (dev_force_privkey) {
@@ -555,7 +351,6 @@ static void node_key(struct privkey *node_privkey, struct pubkey *node_id)
 static void node_schnorrkey(secp256k1_keypair *node_keypair,
 			    struct pubkey32 *node_id32)
 {
-	printf("%s\n", "node_schnorrkey");
 	secp256k1_keypair unused_kp;
 	struct privkey node_privkey;
 
@@ -581,7 +376,6 @@ static void node_schnorrkey(secp256k1_keypair *node_keypair,
  * will be generated by mixing in the dbid and the peer node_id. */
 static void hsm_channel_secret_base(struct secret *channel_seed_base)
 {
-	printf("%s\n", "hsm_channel_secret_base");
 	hkdf_sha256(channel_seed_base, sizeof(struct secret), NULL, 0,
 		    &secretstuff.hsm_secret, sizeof(secretstuff.hsm_secret),
 		    /*~ Initially, we didn't support multiple channels per
@@ -596,8 +390,7 @@ static void hsm_channel_secret_base(struct secret *channel_seed_base)
 /*~ This gets the seed for this particular channel. */
 static void get_channel_seed(const struct node_id *peer_id, u64 dbid,
 			     struct secret *channel_seed)
-{	
-	printf("%s\n", "get_channel_seed");
+{
 	struct secret channel_base;
 	u8 input[sizeof(peer_id->k) + sizeof(dbid)];
 	/*~ Again, "per-peer" should be "per-channel", but Hysterical Raisins */
@@ -625,7 +418,6 @@ static void get_channel_seed(const struct node_id *peer_id, u64 dbid,
 /*~ Called at startup to derive the bip32 field. */
 static void populate_secretstuff(void)
 {
-	printf("%s\n", "populate_secretstuff");
 	u8 bip32_seed[BIP32_ENTROPY_LEN_256];
 	u32 salt = 0;
 	struct ext_key master_extkey, child_extkey;
@@ -735,10 +527,6 @@ static void populate_secretstuff(void)
 static void bitcoin_key(struct privkey *privkey, struct pubkey *pubkey,
 			u32 index)
 {
-
-
-	printf("%s\n", "bitcoin_key");
-
 	struct ext_key ext;
 	struct privkey unused_priv;
 
@@ -771,7 +559,6 @@ static void bitcoin_key(struct privkey *privkey, struct pubkey *pubkey,
  */
 static void create_encrypted_hsm(int fd, const struct secret *encryption_key)
 {
-	printf("%s\n", "create_encrypted_hsm");
 	struct encrypted_hsm_secret cipher;
 
 	if (!encrypt_hsm_secret(encryption_key, &secretstuff.hsm_secret,
@@ -787,7 +574,6 @@ static void create_encrypted_hsm(int fd, const struct secret *encryption_key)
 
 static void create_hsm(int fd)
 {
-	printf("%s\n", "create_hsm");
 	/*~ ccan/read_write_all has a more convenient return than write() where
 	 * we'd have to check the return value == the length we gave: write()
 	 * can return short on normal files if we run out of disk space. */
@@ -805,7 +591,6 @@ static void create_hsm(int fd)
 static void maybe_create_new_hsm(const struct secret *encryption_key,
                                  bool random_hsm)
 {
-	printf("%s\n", "maybe_create_new_hsm");
 	/*~ Note that this is opened for write-only, even though the permissions
 	 * are set to read-only.  That's perfectly valid! */
 	int fd = open("hsm_secret", O_CREAT|O_EXCL|O_WRONLY, 0400);
@@ -867,7 +652,6 @@ static void maybe_create_new_hsm(const struct secret *encryption_key,
  * file contents are as they will be for future invocations. */
 static void load_hsm(const struct secret *encryption_key)
 {
-	printf("%s\n", "load_hsm");
 	struct stat st;
 	int fd = open("hsm_secret", O_RDONLY);
 	if (fd < 0)
@@ -932,7 +716,6 @@ static struct io_plan *init_hsm(struct io_conn *conn,
 				struct client *c,
 				const u8 *msg_in)
 {
-	printf("%s\n", "init_hsm");
 	struct node_id node_id;
 	struct pubkey key;
 	struct pubkey32 bolt12;
@@ -980,13 +763,7 @@ static struct io_plan *init_hsm(struct io_conn *conn,
 		discard_key(take(hsm_encryption_key));
 
 	/*~ We tell lightning our node id and (public) bip32 seed. */
-
-
-
 	node_key(NULL, &key);
-
-	//key.pubkey = joint_pubkey;
-
 	node_id_from_pubkey(&node_id, &key);
 
 	/* We also give it the base key for bolt12 payerids */
@@ -1012,15 +789,12 @@ static struct io_plan *handle_ecdh(struct io_conn *conn,
 				   struct client *c,
 				   const u8 *msg_in)
 {
-	printf("%s\n", "handle_ecdh");
-
 	struct privkey privkey;
 	struct pubkey point;
 	struct secret ss;
 
 	if (!fromwire_hsmd_ecdh_req(msg_in, &point))
 		return bad_req(conn, c, msg_in);
-
 
 	/*~ We simply use the secp256k1_ecdh function: if privkey.secret.data is invalid,
 	 * we kill them for bad randomness (~1 in 2^127 if privkey.secret.data is random) */
@@ -1029,7 +803,6 @@ static struct io_plan *handle_ecdh(struct io_conn *conn,
 			   privkey.secret.data, NULL, NULL) != 1) {
 		return bad_req_fmt(conn, c, msg_in, "secp256k1_ecdh fail");
 	}
-
 
 	/*~ In the normal case, we return the shared secret, and then read
 	 * the next msg. */
@@ -1044,7 +817,6 @@ static struct io_plan *handle_cannouncement_sig(struct io_conn *conn,
 						struct client *c,
 						const u8 *msg_in)
 {
-	printf("%s\n", "handle_cannouncement_sig");
 	/*~ Our autogeneration code doesn't define field offsets, so we just
 	 * copy this from the spec itself.
 	 *
@@ -1102,7 +874,7 @@ static struct io_plan *handle_cannouncement_sig(struct io_conn *conn,
 	sha256_double(&hash, ca + offset, tal_count(ca) - offset);
 
 	sign_hash(&node_pkey, &hash, &node_sig);
-	sign_hash_2(&funding_privkey, &hash, &bitcoin_sig);
+	sign_hash(&funding_privkey, &hash, &bitcoin_sig);
 
 	reply = towire_hsmd_cannouncement_sig_reply(NULL, &node_sig,
 						   &bitcoin_sig);
@@ -1114,7 +886,6 @@ static struct io_plan *handle_channel_update_sig(struct io_conn *conn,
 						 struct client *c,
 						 const u8 *msg_in)
 {
-	printf("%s\n", "handle_channel_update_sig");
 	/* BOLT #7:
 	 *
 	 * - MUST set `signature` to the signature of the double-SHA256 of the
@@ -1171,7 +942,6 @@ static struct io_plan *handle_get_channel_basepoints(struct io_conn *conn,
 						     struct client *c,
 						     const u8 *msg_in)
 {
-	printf("%s\n", "handle_get_channel_basepoints");
 	struct node_id peer_id;
 	u64 dbid;
 	struct secret seed;
@@ -1183,21 +953,6 @@ static struct io_plan *handle_get_channel_basepoints(struct io_conn *conn,
 
 	get_channel_seed(&peer_id, dbid, &seed);
 	derive_basepoints(&seed, &funding_pubkey, &basepoints, NULL, NULL);
-
-    printf("\n%s\n", "###########");
-
-
-		keygen_output(&joint_pubkey);
-		unsigned char* cp2 = joint_pubkey.data;
-		//unsigned char* cp2 = funding_pubkey.pubkey.data;
-		printf("\n%s\n", "INJECTED KEY: ");
-		for ( int i = 0; i < 64; i++ )
-		{
-   			printf("%02x", *cp2++);
-		}
-		funding_pubkey.pubkey = joint_pubkey;
-
-	printf("\n%s\n", "###########");
 
 	return req_reply(conn, c,
 			 take(towire_hsmd_get_channel_basepoints_reply(NULL,
@@ -1216,7 +971,6 @@ static struct io_plan *handle_sign_commitment_tx(struct io_conn *conn,
 						 struct client *c,
 						 const u8 *msg_in)
 {
-	printf("%s\n", "handle_sign_commitment_tx");
 	struct pubkey remote_funding_pubkey, local_funding_pubkey;
 	struct node_id peer_id;
 	u64 dbid;
@@ -1247,12 +1001,6 @@ static struct io_plan *handle_sign_commitment_tx(struct io_conn *conn,
 	/*~ Bitcoin signatures cover the (part of) the script they're
 	 * executing; the rules are a bit complex in general, but for
 	 * Segregated Witness it's simply the current script. */
-
-		//// Omer : 
-    secp256k1_pubkey joint_pubkey = get_joint_pubkey();
-    local_funding_pubkey.pubkey = joint_pubkey;
-    //// 
-
 	funding_wscript = bitcoin_redeem_2of2(tmpctx,
 					      &local_funding_pubkey,
 					      &remote_funding_pubkey);
@@ -1278,7 +1026,6 @@ static struct io_plan *handle_sign_remote_commitment_tx(struct io_conn *conn,
 							struct client *c,
 							const u8 *msg_in)
 {
-	printf("%s\n", "handle_sign_remote_commitment_tx");
 	struct pubkey remote_funding_pubkey, local_funding_pubkey;
 	struct secret channel_seed;
 	struct bitcoin_tx *tx;
@@ -1287,7 +1034,6 @@ static struct io_plan *handle_sign_remote_commitment_tx(struct io_conn *conn,
 	const u8 *funding_wscript;
 	struct pubkey remote_per_commit;
 	bool option_static_remotekey;
-
 
 	if (!fromwire_hsmd_sign_remote_commitment_tx(tmpctx, msg_in,
 						    &tx,
@@ -1307,11 +1053,6 @@ static struct io_plan *handle_sign_remote_commitment_tx(struct io_conn *conn,
 	derive_basepoints(&channel_seed,
 			  &local_funding_pubkey, NULL, &secrets, NULL);
 
-	//// Omer : 
-    secp256k1_pubkey joint_pubkey = get_joint_pubkey();
-    local_funding_pubkey.pubkey = joint_pubkey;
-    //// 
-
 	funding_wscript = bitcoin_redeem_2of2(tmpctx,
 					      &local_funding_pubkey,
 					      &remote_funding_pubkey);
@@ -1330,7 +1071,6 @@ static struct io_plan *handle_sign_remote_htlc_tx(struct io_conn *conn,
 						  struct client *c,
 						  const u8 *msg_in)
 {
-	printf("%s\n", "handle_sign_remote_htlc_tx");
 	struct secret channel_seed;
 	struct bitcoin_tx *tx;
 	struct bitcoin_signature sig;
@@ -1389,7 +1129,6 @@ static struct io_plan *handle_sign_to_us_tx(struct io_conn *conn,
 					    const u8 *wscript,
 					    enum sighash_type sighash_type)
 {
-	printf("%s\n", "handle_sign_to_us_tx");
 	struct bitcoin_signature sig;
 	struct pubkey pubkey;
 
@@ -1412,8 +1151,6 @@ static struct io_plan *handle_sign_delayed_payment_to_us(struct io_conn *conn,
 							 struct client *c,
 							 const u8 *msg_in)
 {
-
-	printf("%s\n", "handle_sign_delayed_payment_to_us");
 	u64 commit_num;
 	struct secret channel_seed, basepoint_secret;
 	struct pubkey basepoint;
@@ -1470,7 +1207,6 @@ static struct io_plan *handle_sign_remote_htlc_to_us(struct io_conn *conn,
 						     struct client *c,
 						     const u8 *msg_in)
 {
-	printf("%s\n", "handle_sign_remote_htlc_to_us");
 	struct secret channel_seed, htlc_basepoint_secret;
 	struct pubkey htlc_basepoint;
 	struct bitcoin_tx *tx;
@@ -1520,7 +1256,6 @@ static struct io_plan *handle_sign_penalty_to_us(struct io_conn *conn,
 						 struct client *c,
 						 const u8 *msg_in)
 {
-	printf("%s\n", "handle_sign_penalty_to_us");
 	struct secret channel_seed, revocation_secret, revocation_basepoint_secret;
 	struct pubkey revocation_basepoint;
 	struct bitcoin_tx *tx;
@@ -1564,7 +1299,6 @@ static struct io_plan *handle_sign_local_htlc_tx(struct io_conn *conn,
 						 struct client *c,
 						 const u8 *msg_in)
 {
-	printf("%s\n", "handle_sign_local_htlc_tx");
 	u64 commit_num;
 	struct secret channel_seed, htlc_basepoint_secret;
 	struct sha256 shaseed;
@@ -1637,7 +1371,6 @@ static struct io_plan *handle_get_per_commitment_point(struct io_conn *conn,
 						       struct client *c,
 						       const u8 *msg_in)
 {
-	printf("%s\n", "handle_get_per_commitment_point");
 	struct secret channel_seed;
 	struct sha256 shaseed;
 	struct pubkey per_commitment_point;
@@ -1682,7 +1415,6 @@ static struct io_plan *handle_check_future_secret(struct io_conn *conn,
 						  struct client *c,
 						  const u8 *msg_in)
 {
-	printf("%s\n", "handle_check_future_secret");
 	struct secret channel_seed;
 	struct sha256 shaseed;
 	u64 n;
@@ -1713,7 +1445,6 @@ static struct io_plan *handle_sign_mutual_close_tx(struct io_conn *conn,
 						   struct client *c,
 						   const u8 *msg_in)
 {
-	printf("%s\n", "handle_sign_mutual_close_tx");
 	struct secret channel_seed;
 	struct bitcoin_tx *tx;
 	struct pubkey remote_funding_pubkey, local_funding_pubkey;
@@ -1733,11 +1464,6 @@ static struct io_plan *handle_sign_mutual_close_tx(struct io_conn *conn,
 	get_channel_seed(&c->id, c->dbid, &channel_seed);
 	derive_basepoints(&channel_seed,
 			  &local_funding_pubkey, NULL, &secrets, NULL);
-
-		//// Omer : 
-    secp256k1_pubkey joint_pubkey = get_joint_pubkey();
-    local_funding_pubkey.pubkey = joint_pubkey;
-    //// 
 
 	funding_wscript = bitcoin_redeem_2of2(tmpctx,
 					      &local_funding_pubkey,
@@ -1761,7 +1487,6 @@ static int pending_client_fd = -1;
 static struct io_plan *send_pending_client_fd(struct io_conn *conn,
 					      struct client *master)
 {
-	printf("%s\n", "send_pending_client_fd");
 	int fd = pending_client_fd;
 	/* This must be the master. */
 	assert(is_lightningd(master));
@@ -1787,7 +1512,6 @@ static struct io_plan *pass_client_hsmfd(struct io_conn *conn,
 					 struct client *c,
 					 const u8 *msg_in)
 {
-	printf("%s\n", "pass_client_hsmfd");
 	int fds[2];
 	u64 dbid, capabilities;
 	struct node_id id;
@@ -1826,7 +1550,6 @@ static struct io_plan *pass_client_hsmfd(struct io_conn *conn,
 static void hsm_unilateral_close_privkey(struct privkey *dst,
 					 struct unilateral_close_info *info)
 {
-	printf("%s\n", "hsm_unilateral_close_privkey");
 	struct secret channel_seed;
 	struct basepoints basepoints;
 	struct secrets secrets;
@@ -1858,8 +1581,6 @@ static void hsm_unilateral_close_privkey(struct privkey *dst,
 static void hsm_key_for_utxo(struct privkey *privkey, struct pubkey *pubkey,
 			     const struct utxo *utxo)
 {
-
-	printf("%s\n", "hsm_key_for_utxo");
 	if (utxo->close_info != NULL) {
 		/* This is a their_unilateral_close/to-us output, so
 		 * we need to derive the secret the long way */
@@ -1878,7 +1599,6 @@ static void hsm_key_for_utxo(struct privkey *privkey, struct pubkey *pubkey,
  * add a partial sig for each */
 static void sign_our_inputs(struct utxo **utxos, struct wally_psbt *psbt)
 {
-	printf("%s\n", "sign_our_inputs");
 	for (size_t i = 0; i < tal_count(utxos); i++) {
 		struct utxo *utxo = utxos[i];
 		for (size_t j = 0; j < psbt->num_inputs; j++) {
@@ -1931,8 +1651,6 @@ static struct io_plan *handle_sign_withdrawal_tx(struct io_conn *conn,
 						 struct client *c,
 						 const u8 *msg_in)
 {
-	printf("%s\n", "handle_sign_withdrawal_tx");
-
 	struct utxo **utxos;
 	struct wally_psbt *psbt;
 
@@ -1950,8 +1668,6 @@ static struct io_plan *handle_get_output_scriptpubkey(struct io_conn *conn,
 						    struct client *c,
 						    const u8 *msg_in)
 {
-
-	printf("%s\n", "handle_get_output_scriptpubkey");
 	struct pubkey pubkey;
 	struct privkey privkey;
 	struct unilateral_close_info info;
@@ -1982,7 +1698,6 @@ static struct io_plan *handle_sign_invoice(struct io_conn *conn,
 					   struct client *c,
 					   const u8 *msg_in)
 {
-	printf("%s\n", "handle_sign_invoice");
 	/*~ We make up a 'u5' type to represent BOLT11's 5-bits-per-byte
 	 * format: it's only for human consumption, as typedefs are almost
 	 * entirely transparent to the C compiler. */
@@ -2045,7 +1760,6 @@ static struct io_plan *handle_sign_node_announcement(struct io_conn *conn,
 						     struct client *c,
 						     const u8 *msg_in)
 {
-	printf("%s\n", "handle_sign_node_announcement");
 	/* BOLT #7:
 	 *
 	 * The origin node:
@@ -2094,7 +1808,6 @@ static struct io_plan *handle_sign_message(struct io_conn *conn,
 					   struct client *c,
 					   const u8 *msg_in)
 {
-	printf("%s\n", "handle_sign_message");
 	u8 *msg;
 	struct sha256_ctx sctx = SHA256_INIT;
 	struct sha256_double shad;
@@ -2130,7 +1843,6 @@ static struct io_plan *handle_sign_bolt12(struct io_conn *conn,
 					   struct client *c,
 					   const u8 *msg_in)
 {
-	printf("%s\n", "handle_sign_bolt12");
 	char *messagename, *fieldname;
 	struct sha256 merkle, sha;
 	struct bip340sig sig;
@@ -2185,7 +1897,6 @@ static struct io_plan *handle_memleak(struct io_conn *conn,
 				      struct client *c,
 				      const u8 *msg_in)
 {
-	printf("%s\n", "handle_memleak");
 	struct htable *memtable;
 	bool found_leak;
 	u8 *reply;
@@ -2213,7 +1924,6 @@ static struct io_plan *handle_memleak(struct io_conn *conn,
 static bool check_client_capabilities(struct client *client,
 				      enum hsmd_wire t)
 {
-	printf("%s\n", "check_client_capabilities");
 	/*~ Here's a useful trick: enums in C are not real types, they're
 	 * semantic sugar sprinkled over an int, bascally (in fact, older
 	 * versions of gcc used to convert the values ints in the parser!).
@@ -2295,8 +2005,6 @@ static bool check_client_capabilities(struct client *client,
 /*~ This is the core of the HSM daemon: handling requests. */
 static struct io_plan *handle_client(struct io_conn *conn, struct client *c)
 {
-	printf("%s\n", "handle_client");
-
 	enum hsmd_wire t = fromwire_peektype(c->msg_in);
 
 	status_debug("Client: Received message %d from client", t);
@@ -2406,7 +2114,6 @@ static struct io_plan *handle_client(struct io_conn *conn, struct client *c)
 
 static void master_gone(struct io_conn *unused UNUSED, struct client *c UNUSED)
 {
-	printf("%s\n", "master_gone");
 	daemon_shutdown();
 	/* Can't tell master, it's gone. */
 	exit(2);
@@ -2414,7 +2121,6 @@ static void master_gone(struct io_conn *unused UNUSED, struct client *c UNUSED)
 
 int main(int argc, char *argv[])
 {
-
 	struct client *master;
 
 	setup_locale();
