@@ -57,8 +57,178 @@
 #include <wire/peer_wire.h>
 #include <wire/wire_io.h>
 
-#define BUFSIZE 128
+#define BUFSIZE 3000
 #define WALLETSIZE 3000
+
+
+
+static void get_per_comm_point_distributed(u64 n, struct secret *old_secret, struct pubkey *per_commitment_point){
+
+	// convert n to string 
+
+	// call wallet cli with n as input argument 
+
+	// wallet cli return commitmnet point (joint key) and old secret 
+
+
+	   printf("%s\n", "get_per_comm_point_distributed");
+    char *cmd = "~/Downloads/from_github/gotham-city/gotham-client/target/release/cli wallet new_point -n ";    
+
+	char tmp[8];
+	sprintf(tmp, "%llu",n);
+    char *newcmd;
+    newcmd = malloc(strlen(cmd) + 64 + 1);
+    strcpy(newcmd,cmd);
+    strcat(newcmd,tmp);
+
+   
+	printf("\n%s", "CLI CALL: ");
+   	printf("%s\n", newcmd);
+
+
+
+
+    // take byte string from h and concat it to cmd 
+
+
+    char buf[BUFSIZE];
+    FILE *fp1;
+
+    if ((fp1 = popen(newcmd, "r")) == NULL) {
+        printf("Error opening pipe!\n");
+        //return -1;
+        return;
+    }
+	
+    while (fgets(buf, BUFSIZE, fp1) != NULL) {
+        // Do whatever you want here...
+        printf("OUTPUT: %s", buf);
+    }
+
+    if(pclose(fp1))  {
+        printf("Command not found or exited with error status\n");
+        //return -1;
+        return;
+    }
+  
+    // parse the output 
+
+   char search_s[] = "n_point:";
+   char *ptr = strstr(buf, search_s);
+
+	if (ptr != NULL) 
+	{
+	//	printf(" contains '%s'\n", search_x);
+	}
+	else 
+	{
+		printf(" doesn't contain '%s'\n", search_s);
+		return;
+	}
+
+
+   unsigned char pubkey[66];
+   int c = 0;
+   int length_pubkey  = 66;
+   ptr++;
+   ptr++;  
+   ptr++;
+   ptr++;
+   ptr++;  
+   ptr++;
+   ptr++;
+   ptr++;  
+   
+   while (c < length_pubkey+1) {
+      pubkey[c++] = *ptr++;
+   }
+
+  unsigned char serialized33bytes[33];
+  const char *pos = (char *)pubkey;
+
+    size_t count = 0;
+
+  //  sscanf(pos, "%2hhx", &serialized33bytes[0]);
+  //  pos += 2 * sizeof(char);
+    for(count = 0; count < 33; count++) {
+        sscanf(pos, "%2hhx", &serialized33bytes[count]);
+        pos += 2 * sizeof(char);
+    }
+
+
+	size_t count_c = 0;
+	printf("\n%s\n", "pubkey: ");
+    printf("0x");
+    for(count_c = 0; count_c < 33; count_c++)
+        printf("%02x", serialized33bytes[count_c]);
+    printf("\n");
+
+ 	secp256k1_context* ctx = secp256k1_context_create(SECP256K1_CONTEXT_SIGN);
+     int isValid = secp256k1_ec_pubkey_parse(ctx, &per_commitment_point->pubkey, serialized33bytes, 33);
+    if (isValid == 0) {}
+
+
+
+   char search_s2[] = "old_secret:";
+   char *ptr2 = strstr(buf, search_s2);
+
+	if (ptr2 != NULL) 
+	{
+
+	//	printf(" contains '%s'\n", search_x);
+	}
+	else 
+	{
+		printf(" doesn't contain '%s'\n", search_s);
+		return;
+	}
+
+
+   unsigned char old_sec[128];
+   int c2 = 0;
+   int length_old_sec  = 128;
+   ptr2++;
+   ptr2++;  
+   ptr2++;
+   ptr2++;
+   ptr2++;  
+   ptr2++;
+   ptr2++;
+   ptr2++;  
+   ptr2++;
+   ptr2++;
+   ptr2++;  
+   while (c2 < length_old_sec+1) {
+
+      old_sec[c2++] = *ptr2++;
+   }
+
+  const char *pos2 = (char *)old_sec;
+
+    size_t count2 = 0;
+
+    uint8_t tmp_secret;
+    for(count2 = 0; count2 < 32; count2++) {
+
+      sscanf(pos2, "%2hhx", &tmp_secret);
+
+            printf("%x ", tmp_secret);
+
+      memcpy(&old_secret->data[count2], &tmp_secret, sizeof(uint8_t));
+        pos2 += 2 * sizeof(char);
+    }
+
+	size_t count_c2 = 0;
+	printf("\n%s\n", "old secret : ");
+    for(count_c2 = 0; count_c2 < 32; count_c2++){
+    	printf("%x", old_secret->data[count_c2]);
+    }
+
+        //printf("{%u}:", old_secret->data[count_c2]);
+    printf("\n");
+    return;
+
+}
 
 
 static secp256k1_pubkey get_joint_pubkey(){
@@ -78,11 +248,11 @@ static secp256k1_pubkey get_joint_pubkey(){
    char search_x[] = "q\":{\"x\":\"";
    char *ptr = strstr(f_str, search_x);
 
-	if (ptr != NULL) /* Substring found */
+	if (ptr != NULL) 
 	{
 	//	printf(" contains '%s'\n", search_x);
 	}
-	else /* Substring not found */
+	else 
 	{
 		printf(" doesn't contain '%s'\n", search_x);
 		//return;
@@ -1370,7 +1540,7 @@ static struct io_plan *handle_sign_remote_htlc_tx(struct io_conn *conn,
 	 * * if `option_anchor_outputs` applies to this commitment transaction,
 	 *   `SIGHASH_SINGLE|SIGHASH_ANYONECANPAY` is used.
 	 */
-	sign_tx_input(tx, 0, NULL, wscript, &htlc_privkey, &htlc_pubkey,
+	sign_tx_input_2(tx, 0, NULL, wscript, &htlc_privkey, &htlc_pubkey,
 		      option_anchor_outputs
 		      ? (SIGHASH_SINGLE|SIGHASH_ANYONECANPAY)
 		      : SIGHASH_ALL, &sig);
@@ -1655,15 +1825,34 @@ static struct io_plan *handle_get_per_commitment_point(struct io_conn *conn,
 		return bad_req_fmt(conn, c, msg_in,
 				   "bad per_commit_point %"PRIu64, n);
 
+
 	if (n >= 2) {
 		old_secret = tal(tmpctx, struct secret);
+	/*	
+		
+		
 		if (!per_commit_secret(&shaseed, old_secret, n - 2)) {
 			return bad_req_fmt(conn, c, msg_in,
 					   "Cannot derive secret %"PRIu64,
 					   n - 2);
-		}
-	} else
-		old_secret = NULL;
+		  */
+	printf("\n%s\n", "###########");
+	printf("n_large = %llu\n", n);
+	get_per_comm_point_distributed(n, old_secret, &per_commitment_point);
+    printf("\n%s\n", "###########");
+    
+		//}
+	} else { 
+	printf("n_small = %llu\n", n);
+	old_secret = tal(tmpctx, struct secret);
+	printf("\n%s\n", "###########");
+	get_per_comm_point_distributed(n, old_secret, &per_commitment_point);
+	
+	old_secret = NULL;
+    printf("\n%s\n", "###########");
+
+	}
+
 
 	/*~ hsm_client_wire.csv marks the secret field here optional, so it only
 	 * gets included if the parameter is non-NULL.  We violate 80 columns
