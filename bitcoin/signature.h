@@ -101,6 +101,14 @@ bool check_signed_hash(const struct sha256_double *hash,
  * @sighash_type: a valid sighash type.
  * @sig: (in) sighash_type indicates what type of signature make in (out) s.
  */
+void sign_tx_input_2(const struct bitcoin_tx *tx,
+		   unsigned int in,
+		   const u8 *subscript,
+		   const u8 *witness,
+		   const struct privkey *privkey, const struct pubkey *pubkey,
+		   enum sighash_type sighash_type,
+		   struct bitcoin_signature *sig);
+
 void sign_tx_input(const struct bitcoin_tx *tx,
 		   unsigned int in,
 		   const u8 *subscript,

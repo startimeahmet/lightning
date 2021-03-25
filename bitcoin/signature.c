@@ -180,6 +180,30 @@ void bitcoin_tx_hash_for_sig(const struct bitcoin_tx *tx, unsigned int in,
 	tal_wally_end(tx->wtx);
 }
 
+// omer: this is the original sign_tx_input
+void sign_tx_input_2(const struct bitcoin_tx *tx,
+		   unsigned int in,
+		   const u8 *subscript,
+		   const u8 *witness_script,
+		   const struct privkey *privkey, const struct pubkey *key,
+		   enum sighash_type sighash_type,
+		   struct bitcoin_signature *sig)
+{
+	printf("%s\n", "sign_tx_input");
+
+	struct sha256_double hash;
+	bool use_segwit = witness_script != NULL;
+	const u8 *script = use_segwit ? witness_script : subscript;
+
+	assert(sighash_type_valid(sighash_type));
+
+	sig->sighash_type = sighash_type;
+	bitcoin_tx_hash_for_sig(tx, in, script, sighash_type, &hash);
+
+	dump_tx("Signing", tx, in, subscript, key, &hash);
+	sign_hash(privkey, &hash, &sig->s);
+}
+
 void sign_tx_input(const struct bitcoin_tx *tx,
 		   unsigned int in,
 		   const u8 *subscript,
