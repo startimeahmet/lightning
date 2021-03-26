@@ -61,7 +61,7 @@
 #define WALLETSIZE 3000
 
 
-
+/*
 static void get_per_comm_point_distributed(u64 n, struct secret *old_secret, struct pubkey *per_commitment_point){
 
 	// convert n to string 
@@ -229,7 +229,7 @@ static void get_per_comm_point_distributed(u64 n, struct secret *old_secret, str
     return;
 
 }
-
+*/
 
 static secp256k1_pubkey get_joint_pubkey(){
 
@@ -1807,61 +1807,45 @@ static struct io_plan *handle_get_per_commitment_point(struct io_conn *conn,
 						       struct client *c,
 						       const u8 *msg_in)
 {
-	printf("%s\n", "handle_get_per_commitment_point");
-	struct secret channel_seed;
-	struct sha256 shaseed;
-	struct pubkey per_commitment_point;
-	u64 n;
-	struct secret *old_secret;
+  printf("%s\n", "handle_get_per_commitment_point");
+  struct secret channel_seed;
+  struct sha256 shaseed;
+  struct pubkey per_commitment_point;
+  u64 n;
+  struct secret *old_secret;
 
-	if (!fromwire_hsmd_get_per_commitment_point(msg_in, &n))
-		return bad_req(conn, c, msg_in);
+  if (!fromwire_hsmd_get_per_commitment_point(msg_in, &n))
+    return bad_req(conn, c, msg_in);
 
-	get_channel_seed(&c->id, c->dbid, &channel_seed);
-	if (!derive_shaseed(&channel_seed, &shaseed))
-		return bad_req_fmt(conn, c, msg_in, "bad derive_shaseed");
+  get_channel_seed(&c->id, c->dbid, &channel_seed);
+  if (!derive_shaseed(&channel_seed, &shaseed))
+    return bad_req_fmt(conn, c, msg_in, "bad derive_shaseed");
 
-	if (!per_commit_point(&shaseed, &per_commitment_point, n))
-		return bad_req_fmt(conn, c, msg_in,
-				   "bad per_commit_point %"PRIu64, n);
+  if (!per_commit_point(&shaseed, &per_commitment_point, n))
+    return bad_req_fmt(conn, c, msg_in,
+           "bad per_commit_point %"PRIu64, n);
 
+  if (n >= 2) {
+    old_secret = tal(tmpctx, struct secret);
+    if (!per_commit_secret(&shaseed, old_secret, n - 2)) {
+      return bad_req_fmt(conn, c, msg_in,
+             "Cannot derive secret %"PRIu64,
+             n - 2);
+    }
+  } else
+    old_secret = NULL;
 
-	if (n >= 2) {
-		old_secret = tal(tmpctx, struct secret);
-	/*	
-		
-		
-		if (!per_commit_secret(&shaseed, old_secret, n - 2)) {
-			return bad_req_fmt(conn, c, msg_in,
-					   "Cannot derive secret %"PRIu64,
-					   n - 2);
-		  */
-	printf("\n%s\n", "###########");
-	printf("n_large = %llu\n", n);
-	get_per_comm_point_distributed(n, old_secret, &per_commitment_point);
-    printf("\n%s\n", "###########");
-    
-		//}
-	} else { 
-	printf("n_small = %llu\n", n);
-	old_secret = tal(tmpctx, struct secret);
-	printf("\n%s\n", "###########");
-	get_per_comm_point_distributed(n, old_secret, &per_commitment_point);
-	
-	old_secret = NULL;
-    printf("\n%s\n", "###########");
-
-	}
-
-
-	/*~ hsm_client_wire.csv marks the secret field here optional, so it only
-	 * gets included if the parameter is non-NULL.  We violate 80 columns
-	 * pretty badly here, but it's a recommendation not a religion. */
-	return req_reply(conn, c,
-			 take(towire_hsmd_get_per_commitment_point_reply(NULL,
-									&per_commitment_point,
-									old_secret)));
+  /*~ hsm_client_wire.csv marks the secret field here optional, so it only
+   * gets included if the parameter is non-NULL.  We violate 80 columns
+   * pretty badly here, but it's a recommendation not a religion. */
+  return req_reply(conn, c,
+       take(towire_hsmd_get_per_commitment_point_reply(NULL,
+                  &per_commitment_point,
+                  old_secret)));
 }
+
+
+
 
 /*~ This is used when the remote peer claims to have knowledge of future
  * commitment states (option_data_loss_protect in the spec) which means we've
