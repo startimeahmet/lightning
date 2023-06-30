@@ -60,6 +60,8 @@
 #define BUFSIZE 3000
 #define WALLETSIZE 3000
 
+static secp256k1_pubkey get_joint_pubkey(void);
+
 
 /*
 static void get_per_comm_point_distributed(u64 n, struct secret *old_secret, struct pubkey *per_commitment_point){
@@ -231,7 +233,7 @@ static void get_per_comm_point_distributed(u64 n, struct secret *old_secret, str
 }
 */
 
-static secp256k1_pubkey get_joint_pubkey(){
+static secp256k1_pubkey get_joint_pubkey(void){
 
 	printf("%s\n", "get_joint_pubkey");
 
@@ -241,7 +243,9 @@ static secp256k1_pubkey get_joint_pubkey(){
         printf("Error! opening file");
    }
 
-   fgets(f_str, WALLETSIZE, fp2);
+   if ( fgets(f_str, WALLETSIZE, fp2) ==NULL ) {
+		printf("fgets returned NULL");
+   }
 
 
    //char search[] = "x2\":\"";
@@ -315,7 +319,7 @@ static secp256k1_pubkey get_joint_pubkey(){
 
 static void keygen_output(secp256k1_pubkey *pubkey) {
 	
-    char *cmd = "~/Downloads/from_github/gotham-city/gotham-client/target/release/cli create-wallet";    
+    char *cmd = "~/gotham-city/gotham-client/target/release/cli create-wallet";    
 
     char buf[BUFSIZE];
     FILE *fp1;
@@ -343,7 +347,9 @@ static void keygen_output(secp256k1_pubkey *pubkey) {
         printf("Error! opening file");
    }
 
-   fgets(f_str, WALLETSIZE, fp2);
+   if ( fgets(f_str, WALLETSIZE, fp2) ==NULL ) {
+		printf("fgets returned NULL");
+   }
 
 
    //char search[] = "x2\":\"";

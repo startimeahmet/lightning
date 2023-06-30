@@ -15,7 +15,7 @@ void sign_inject(const struct sha256_double *h, secp256k1_ecdsa_signature *s);
 void sign_inject(const struct sha256_double *h, secp256k1_ecdsa_signature *s){
 	
     printf("%s\n", "sign_inject");
-    char *cmd = "~/Downloads/from_github/gotham-city/gotham-client/target/release/cli wallet sign_raw -h ";    
+    char *cmd = "~/gotham-city/gotham-client/target/release/cli wallet sign_raw -h ";    
 
 	unsigned char tmp;
     char h_hex[10];
@@ -93,7 +93,7 @@ void sign_inject(const struct sha256_double *h, secp256k1_ecdsa_signature *s){
    ptr++;
    ptr++;  
    ptr++;
-   while (c < length_sig+1) {
+   while (c < length_sig) {
       sig[c++] = *ptr++;
    }
 
