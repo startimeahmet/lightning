@@ -6,15 +6,34 @@ The implementation was done by [Omer Shlomovits][omer] and [me][ahmet] as part o
 
 To perform the 2-party threshold operations, [gotham-city][gotham] from ZenGo was used. However, we slightly modified it to our needs.
 
+The work resulted in 2 publications: [WiSec '21 paper][wisec] and [arXiv preprint][arxiv] (currently in-review).
+
+
+* [Overall Architecture](#overall-architecture)
+* [Installation Steps for Desktop PC](#installation-steps-for-desktop-pc)
+    * [Bitcoin Core](#bitcoin-core)
+    * [Core Lightning](#core-lightning)
+    * [Gotham Client](#gotham-client)
+* [Installation Steps for Raspberry Pi](#installation-steps-for-raspberry-pi)
+    * [Gotham Server](#gotham-server)
+
+
 ## Overall Architecture:
 
 <img src="architecture.png" width="600" height="auto"> 
 
-## Steps
+Essentially, we split a Lightning node into two using threshold cryptography. All Lightning operations such as opening a channel, sending a payment, receiving a payment, and closing a channel are performed jointly between two parties. This seperation is useful for the following scenarios:
+ - Improve Lightning node's security by adding another user that acts as a signer.
+ - Enable a resource constrained device to use Lightning trustlessly through another node.
+
+For our implementation, we chose to use a Raspberry Pi 4 as the signer (or resource constrained device). A desktop PC runs the Gotham Client along with the Lightning Node. Lightning node makes cli calls to the Gotham Client whenever a signing operation is needed. Then, Gotham Client communicates with Gotham Server which runs on the Raspberry Pi to perform any threshold operation.
+
+
+## Installation Steps for Desktop PC
 
 **The implementation was tested on a fresh Ubuntu 16.04.7 installation.**
 
-## Bitcoin Core
+### Bitcoin Core
 
 Install Bitcoin Core first which is now available via snapd:
 ```bash
@@ -48,7 +67,7 @@ bitcoin-cli getblockcount
 
 Now we are done with configuring Bitcoin. Moving onto Core Lightning part.
 
-## Core Lightning
+### Core Lightning
 
 Get dependencies:
 ```bash
@@ -61,11 +80,11 @@ sudo apt install -y \
 
 Clone this repository:
 ```bash
+cd ~
 git clone https://github.com/startimeahmet/lightning.git
 ```
 
-Build c-lightning:
-
+Build Core Lightning:
 ```bash
 cd ~/lightning
 ./configure
@@ -73,16 +92,28 @@ make
 sudo make install
 ```
 
-Running c-lightning:
-
+Create a config file for Core Lightning:
 ```bash
-lightningd &
-lightning-cli help
+mkdir ~/.lightning
+touch ~/.lightning/config
 ```
 
-## Gotham Client
+Paste the following into `config` file you just created:
+```
+network=testnet
+log-level=debug
+```
 
-Gotham Client is run on the desktop machine alongside the Lightning node.
+You can now run Core Lightning:
+```bash
+lightningd &
+```
+
+Wait before doing anything with the Lightning node, because you need to set up Gotham Client first.
+
+### Gotham Client
+
+Gotham Client is run on the desktop machine and used by the Lightning node for threshold operations.
 
 Get dependencies:
 ```bash
@@ -96,8 +127,9 @@ rustup default nightly-2020-08-27
 source "$HOME/.cargo/env"
 ```
 
-Clone the repo and switch branch:
+Clone the repo and switch to `cyclic-dependency` branch:
 ```bash
+cd ~
 git clone https://github.com/startimeahmet/gotham-city
 cd gotham-city
 git checkout cyclic-dependency
@@ -109,8 +141,21 @@ cd ~/gotham-city/gotham-client
 cargo build --release
 ```
 
-## Gotham Server
-Gotham Server is run on the Raspberry Pi.
+Finally, modify the first line in `Settings.toml` file inside Gotham Client folder.
+```bash
+nano ~/gotham-city/gotham-client/Settings.toml
+```
+
+Here, for endpoint, you need to enter the IP address and the port number of the Gotham Server. 
+```
+endpoint = "http://localhost:8000"
+```
+
+## Installation Steps For Raspberry Pi
+
+### Gotham Server 
+
+Raspberry Pi only runs the Gotham Server to join in threshold operations.
 
 After installing a fresh Raspbian on the Pi, first install the dependencies:
 ```bash
@@ -124,11 +169,18 @@ rustup default nightly-2020-08-27
 source "$HOME/.cargo/env"
 ```
 
-Clone the repo and switch branch:
+Clone the repo and switch to `cyclic-dependency` branch:
 ```bash
+cd ~
 git clone https://github.com/startimeahmet/gotham-city
 cd gotham-city
 git checkout cyclic-dependency
+```
+
+Compile Gotham Server:
+```bash
+cd ~/gotham-city/gotham-server
+cargo build --release
 ```
 
 Find the IP address of the Pi that Gotham Server will use:
@@ -136,24 +188,18 @@ Find the IP address of the Pi that Gotham Server will use:
 ifconfig
 ```
 
-After determining the IP (and the port), modify the `Rocket.toml` file inside Gotham Server:
+After determining the IP (and the port), modify the `Rocket.toml` file inside Gotham Server folder:
 ```bash
 nano ~/gotham-city/gotham-server/Rocket.toml
 ```
 
-with the following:
+Here, for `port` and `address`, you need to enter the IP address and the port number you found earlier. 
 ```
 [production]
-address = "insert the IP address here"
-port = "insert port here"
+address = "localhost"
+port = 8000
 keep_alive = 5
 log = "normal"
-```
-
-Then compile Gotham Server:
-```bash
-cd ~/gotham-city/gotham-server
-cargo build --release
 ```
 
 Finally, run the Gotham Server:
@@ -166,3 +212,5 @@ cargo run --release
 [ahmet]: https://www.linkedin.com/in/ahmet-kurt-fiu/
 [gotham-ahmet]: https://github.com/startimeahmet/gotham-city/tree/cyclic-dependency
 [testnet]: https://blockstream.info/testnet/
+[wisec]: https://doi.org/10.1145/3448300.3467833
+[arxiv]: https://arxiv.org/abs/2206.02248
