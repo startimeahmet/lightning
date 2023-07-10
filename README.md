@@ -6,6 +6,10 @@ The implementation was done by [Omer Shlomovits][omer] and [me][ahmet] as part o
 
 To perform the 2-party threshold operations, [gotham-city][gotham] from ZenGo was used. However, we slightly modified it to our needs.
 
+## Overall Architecture:
+
+<img src="architecture.png" width="600" height="auto"> 
+
 ## Steps
 
 **The implementation was tested on a fresh Ubuntu 16.04.7 installation.**
